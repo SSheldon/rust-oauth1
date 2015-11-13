@@ -4,6 +4,8 @@ extern crate crypto;
 extern crate url;
 extern crate uuid;
 
+use std::fmt::Write;
+
 use rustc_serialize::base64::{self, ToBase64};
 use crypto::hmac::Hmac;
 use crypto::mac::Mac;
@@ -118,16 +120,13 @@ fn auth_header<'a, I, V>(oauth_params: I) -> String
     let mut auth = "OAuth ".to_owned();
     let mut first = true;
     for (k, v) in oauth_params {
-        if first {
+        let sep = if first {
             first = false;
+            ""
         } else {
-            auth.push_str(", ");
-        }
-
-        auth.push_str(k);
-        auth.push_str("=\"");
-        auth.push_str(v.as_ref());
-        auth.push('"');
+            ", "
+        };
+        write!(&mut auth, "{}{}=\"{}\"", sep, k, v.as_ref()).unwrap();
     }
 
     auth
