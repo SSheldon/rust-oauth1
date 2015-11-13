@@ -110,6 +110,7 @@ fn auth_params<I, K, V>(method: &str, uri: &str, timestamp: &str,
         ("oauth_signature_method", "HMAC-SHA1".to_owned()),
         ("oauth_timestamp", encode(timestamp)),
         ("oauth_nonce", encode(nonce)),
+        ("oauth_version", "1.0".to_owned()),
     ];
     if let Some(token) = token {
         oauth_params.insert(1, ("oauth_token", encode(token.key)));
@@ -236,7 +237,8 @@ mod tests {
             ("oauth_signature_method", "HMAC-SHA1"),
             ("oauth_timestamp", "137131201"),
             ("oauth_nonce", "7d8f3e4a"),
-            ("oauth_signature", "r6%2FTJjbCOr97%2F%2BUU0NsvSne7s5g%3D"),
+            ("oauth_version", "1.0"),
+            ("oauth_signature", "OB33pYjWAnf%2BxtOHN4Gmbdil168%3D"),
         ];
         expected.sort();
 
