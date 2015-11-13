@@ -78,9 +78,9 @@ fn sign(base: &str, consumer_secret: &str, token_secret: Option<&str>) -> String
     result.code().to_base64(config)
 }
 
-fn authorization<I, K, V>(method: &str, uri: &str, timestamp: &str,
+fn auth_params<I, K, V>(method: &str, uri: &str, timestamp: &str,
         nonce: &str, consumer: Token, token: Option<Token>, params: I)
-        -> String
+        -> Vec<(&'static str, String)>
         where K: AsRef<str>, V: AsRef<str>, I: IntoIterator<Item=(K, V)> {
     // Collect and encode the oauth params
     let mut oauth_params = vec![
@@ -109,6 +109,11 @@ fn authorization<I, K, V>(method: &str, uri: &str, timestamp: &str,
     let signature = sign(&base, consumer.secret, token.map(|t| t.secret));
     oauth_params.push(("oauth_signature", encode(&signature)));
 
+    oauth_params
+}
+
+fn auth_header<'a, I, V>(oauth_params: I) -> String
+        where V: AsRef<str>, I: IntoIterator<Item=(&'a str, V)> {
     // Combine everything into the authorization
     let mut auth = "OAuth ".to_owned();
     let mut first = true;
@@ -121,7 +126,7 @@ fn authorization<I, K, V>(method: &str, uri: &str, timestamp: &str,
 
         auth.push_str(k);
         auth.push_str("=\"");
-        auth.push_str(&v);
+        auth.push_str(v.as_ref());
         auth.push('"');
     }
 
@@ -134,12 +139,14 @@ pub fn authorize<I, K, V>(method: &str, uri: &str, consumer: Token,
     let timestamp = time::now_utc().to_timespec().sec.to_string();
     let nonce = Uuid::new_v4().to_simple_string();
 
-    authorization(method, uri, &timestamp, &nonce, consumer, token, params)
+    let oauth_params = auth_params(method, uri, &timestamp, &nonce,
+        consumer, token, params);
+    auth_header(oauth_params)
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{Token, authorization, signature_base};
+    use super::{Token, auth_header, auth_params, signature_base};
 
     #[test]
     fn test_signature_base() {
@@ -186,7 +193,7 @@ mod tests {
             ("a3", "2 q"),
         ];
 
-        let result = authorization(
+        let oauth_params = auth_params(
             "POST",
             "http://example.com/request",
             "137131201",
@@ -195,6 +202,7 @@ mod tests {
             Some(token),
             params,
         );
+        let result = auth_header(oauth_params);
 
         let expected = "\
             OAuth oauth_consumer_key=\"9djdj82h48djs9d2\", \
