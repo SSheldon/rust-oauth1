@@ -1,5 +1,11 @@
+extern crate rustc_serialize;
+extern crate crypto;
 extern crate url;
 
+use rustc_serialize::base64::{self, ToBase64};
+use crypto::hmac::Hmac;
+use crypto::mac::Mac;
+use crypto::sha1::Sha1;
 use url::percent_encoding::{
     FORM_URLENCODED_ENCODE_SET,
     utf8_percent_encode,
@@ -54,7 +60,19 @@ fn signature_base<'a, I>(method: &str, uri: &str, params: I) -> String
 }
 
 fn sign(base: &str, consumer_secret: &str, token_secret: Option<&str>) -> String {
-    "".to_owned()
+    let key = format!("{}&{}", consumer_secret, token_secret.unwrap_or(""));
+
+    let mut hmac = Hmac::new(Sha1::new(), key.as_bytes());
+    hmac.input(base.as_bytes());
+    let result = hmac.result();
+
+    let config = base64::Config {
+        char_set: base64::CharacterSet::Standard,
+        newline: base64::Newline::LF,
+        pad: true,
+        line_length: None,
+    };
+    result.code().to_base64(config)
 }
 
 fn authorization<I, K, V>(method: &str, uri: &str, timestamp: &str,
@@ -90,7 +108,7 @@ fn authorization<I, K, V>(method: &str, uri: &str, timestamp: &str,
 
     // Combine everything into the authorization
     let mut auth = "OAuth ".to_owned();
-    let mut first = false;
+    let mut first = true;
     for (k, v) in oauth_params {
         if first {
             first = false;
@@ -172,7 +190,7 @@ mod tests {
             oauth_signature_method=\"HMAC-SHA1\", \
             oauth_timestamp=\"137131201\", \
             oauth_nonce=\"7d8f3e4a\", \
-            oauth_signature=\"djosJKDKJSD8743243%2Fjdk33klY%3D\"";
+            oauth_signature=\"r6%2FTJjbCOr97%2F%2BUU0NsvSne7s5g%3D\"";
         assert_eq!(result, expected);
     }
 }
