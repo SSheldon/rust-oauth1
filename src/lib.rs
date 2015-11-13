@@ -64,7 +64,7 @@ fn authorization<I, K, V>(method: &str, uri: &str, timestamp: &str,
         ("oauth_nonce", encode(nonce)),
     ];
     if let Some(token) = token {
-        oauth_params.push(("oauth_token", encode(token.key)));
+        oauth_params.insert(1, ("oauth_token", encode(token.key)));
     }
 
     // Collect and encode the extra params
@@ -79,7 +79,27 @@ fn authorization<I, K, V>(method: &str, uri: &str, timestamp: &str,
         signature_base(method, uri, oauth_params.chain(extra_params))
     };
 
-    "".to_owned()
+    // Generate the signature from the base
+    let signature = String::new();
+    oauth_params.push(("oauth_signature", encode(&signature)));
+
+    // Combine everything into the authorization
+    let mut auth = "OAuth ".to_owned();
+    let mut first = false;
+    for (k, v) in oauth_params {
+        if first {
+            first = false;
+        } else {
+            auth.push_str(", ");
+        }
+
+        auth.push_str(k);
+        auth.push_str("=\"");
+        auth.push_str(&v);
+        auth.push('"');
+    }
+
+    auth
 }
 
 #[cfg(test)]
