@@ -145,7 +145,13 @@ pub fn authorize<I, K, V>(method: &str, uri: &str, consumer: Token,
 
 #[cfg(test)]
 mod tests {
-    use super::{Token, auth_header, auth_params, signature_base};
+    use super::{Token, encode, auth_header, auth_params, signature_base};
+
+    #[test]
+    fn test_encode() {
+        assert_eq!(encode("aZ0-._~"), "aZ0-._~");
+        assert_eq!(encode("*"), "%2A");
+    }
 
     #[test]
     fn test_signature_base() {
