@@ -1,6 +1,8 @@
 extern crate rustc_serialize;
+extern crate time;
 extern crate crypto;
 extern crate url;
+extern crate uuid;
 
 use rustc_serialize::base64::{self, ToBase64};
 use crypto::hmac::Hmac;
@@ -11,9 +13,10 @@ use url::percent_encoding::{
     utf8_percent_encode,
     utf8_percent_encode_to,
 };
+use uuid::Uuid;
 
 #[derive(Clone, Copy)]
-struct Token<'a> {
+pub struct Token<'a> {
     pub key: &'a str,
     pub secret: &'a str,
 }
@@ -123,6 +126,15 @@ fn authorization<I, K, V>(method: &str, uri: &str, timestamp: &str,
     }
 
     auth
+}
+
+pub fn authorize<I, K, V>(method: &str, uri: &str, consumer: Token,
+        token: Option<Token>, params: I) -> String
+        where K: AsRef<str>, V: AsRef<str>, I: IntoIterator<Item=(K, V)> {
+    let timestamp = time::now_utc().to_timespec().sec.to_string();
+    let nonce = Uuid::new_v4().to_simple_string();
+
+    authorization(method, uri, &timestamp, &nonce, consumer, token, params)
 }
 
 #[cfg(test)]
