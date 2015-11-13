@@ -180,7 +180,7 @@ mod tests {
     }
 
     #[test]
-    fn test_authorization() {
+    fn test_auth_params() {
         let consumer = Token { key: "9djdj82h48djs9d2", secret: "j49sk3j29djd" };
         let token = Token { key: "kkk9d7dh3k39sjv7", secret: "dh893hdasih9" };
 
@@ -193,7 +193,7 @@ mod tests {
             ("a3", "2 q"),
         ];
 
-        let oauth_params = auth_params(
+        let mut oauth_params = auth_params(
             "POST",
             "http://example.com/request",
             "137131201",
@@ -202,6 +202,34 @@ mod tests {
             Some(token),
             params,
         );
+        // Sort so the ordering is the same in comparisons
+        oauth_params.sort();
+
+        let mut expected = vec![
+            ("oauth_consumer_key", "9djdj82h48djs9d2"),
+            ("oauth_token", "kkk9d7dh3k39sjv7"),
+            ("oauth_signature_method", "HMAC-SHA1"),
+            ("oauth_timestamp", "137131201"),
+            ("oauth_nonce", "7d8f3e4a"),
+            ("oauth_signature", "r6%2FTJjbCOr97%2F%2BUU0NsvSne7s5g%3D"),
+        ];
+        expected.sort();
+
+        assert_eq!(oauth_params.len(), expected.len());
+        assert!(oauth_params.into_iter().zip(expected.into_iter())
+                            .all(|((k1, v1), (k2, v2))| k1 == k2 && v1 == v2));
+    }
+
+    #[test]
+    fn test_auth_header() {
+        let oauth_params = vec![
+            ("oauth_consumer_key", "9djdj82h48djs9d2"),
+            ("oauth_token", "kkk9d7dh3k39sjv7"),
+            ("oauth_signature_method", "HMAC-SHA1"),
+            ("oauth_timestamp", "137131201"),
+            ("oauth_nonce", "7d8f3e4a"),
+            ("oauth_signature", "r6%2FTJjbCOr97%2F%2BUU0NsvSne7s5g%3D"),
+        ];
         let result = auth_header(oauth_params);
 
         let expected = "\
