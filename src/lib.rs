@@ -6,6 +6,7 @@ use url::percent_encoding::{
     utf8_percent_encode_to,
 };
 
+#[derive(Clone, Copy)]
 struct Token<'a> {
     pub key: &'a str,
     pub secret: &'a str,
@@ -52,6 +53,10 @@ fn signature_base<'a, I>(method: &str, uri: &str, params: I) -> String
     result
 }
 
+fn sign(base: &str, consumer_secret: &str, token_secret: Option<&str>) -> String {
+    "".to_owned()
+}
+
 fn authorization<I, K, V>(method: &str, uri: &str, timestamp: &str,
         nonce: &str, consumer: Token, token: Option<Token>, params: I)
         -> String
@@ -80,7 +85,7 @@ fn authorization<I, K, V>(method: &str, uri: &str, timestamp: &str,
     };
 
     // Generate the signature from the base
-    let signature = String::new();
+    let signature = sign(&base, consumer.secret, token.map(|t| t.secret));
     oauth_params.push(("oauth_signature", encode(&signature)));
 
     // Combine everything into the authorization
