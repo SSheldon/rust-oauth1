@@ -1,7 +1,6 @@
 extern crate rustc_serialize;
 extern crate time;
 extern crate crypto;
-extern crate url;
 extern crate uuid;
 
 use std::fmt::Write;
@@ -10,11 +9,6 @@ use rustc_serialize::base64::{self, ToBase64};
 use crypto::hmac::Hmac;
 use crypto::mac::Mac;
 use crypto::sha1::Sha1;
-use url::percent_encoding::{
-    FORM_URLENCODED_ENCODE_SET,
-    utf8_percent_encode,
-    utf8_percent_encode_to,
-};
 use uuid::Uuid;
 
 #[derive(Clone, Copy)]
@@ -24,11 +18,37 @@ pub struct Token<'a> {
 }
 
 fn encode(s: &str) -> String {
-    utf8_percent_encode(s, FORM_URLENCODED_ENCODE_SET)
+    let mut result = String::new();
+    encode_to(s, &mut result);
+    result
 }
 
 fn encode_to(s: &str, output: &mut String) {
-    utf8_percent_encode_to(s, FORM_URLENCODED_ENCODE_SET, output);
+    fn is_unreserved(b: u8) -> bool {
+        match b {
+            b'0'...b'9' | b'a'...b'z' | b'A'...b'Z' |
+            b'-' | b'.' | b'_' | b'~' => true,
+            _ => false,
+        }
+    }
+
+    fn hex_char(b: u8) -> char {
+        match b {
+            0...9 => (b'0' + b) as char,
+            10...15 => (b'A' + (b - 10)) as char,
+            _ => unreachable!(),
+        }
+    }
+
+    for byte in s.bytes() {
+        if is_unreserved(byte) {
+            output.push(byte as char);
+        } else {
+            output.push('%');
+            output.push(hex_char(byte / 16));
+            output.push(hex_char(byte % 16));
+        }
+    }
 }
 
 fn signature_base<'a, I>(method: &str, uri: &str, params: I) -> String
